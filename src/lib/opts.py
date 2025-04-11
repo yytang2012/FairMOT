@@ -35,7 +35,7 @@ class opts(object):
                              help='random seed') # from CornerNet
 
     # log
-    self.parser.add_argument('--print_iter', type=int, default=0, 
+    self.parser.add_argument('--print_iter', type=int, default=0,
                              help='disable progress bar and print to screen.')
     self.parser.add_argument('--hide_data_time', action='store_true',
                              help='not display time during training.')
@@ -124,7 +124,7 @@ class opts(object):
     self.parser.add_argument('--data_cfg', type=str,
                              default='../src/lib/cfg/data.json',
                              help='load data from cfg')
-    self.parser.add_argument('--data_dir', type=str, default='/home/zyf/dataset')
+    self.parser.add_argument('--data_dir', type=str, default='/media/yytang/14T-Data/Dataset/MOT/JDE')
 
     # loss
     self.parser.add_argument('--mse_loss', action='store_true',

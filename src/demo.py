@@ -38,6 +38,6 @@ def demo(opt):
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     opt = opts().init()
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     demo(opt)
