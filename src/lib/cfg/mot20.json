@@ -1,5 +1,5 @@
 {
-    "root":"/media/yytang/14T-Data/Dataset/MOT/JDE",
+    "root":"/Users/yutao/Dataset/MOT/JDE/MOT20",
     "train":
     {
         "mot20":"./data/mot20.train"
