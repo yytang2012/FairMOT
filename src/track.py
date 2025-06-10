@@ -135,8 +135,10 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
+        # Use the new device selection logic
+        use_cuda = getattr(opt, 'use_cuda', opt.gpus[0] >= 0 if len(opt.gpus) > 0 else False)
         nf, ta, tc = eval_seq(opt, dataloader, data_type, result_filename,
-                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
+                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, use_cuda=use_cuda)
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)

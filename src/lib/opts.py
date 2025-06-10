@@ -25,8 +25,11 @@ class opts(object):
                                   'in the exp dir if load_model is empty.') 
 
     # system
+    self.parser.add_argument('--device', default='auto', 
+                             help='Device to use: "cpu", "cuda", "auto", "cuda:0", "cuda:1", etc. '
+                                  '"auto" will detect CUDA availability and use best device')
     self.parser.add_argument('--gpus', default='2, 3',
-                             help='-1 for CPU, use comma for multiple gpus')
+                             help='[DEPRECATED] Use --device instead. -1 for CPU, use comma for multiple gpus')
     self.parser.add_argument('--num_workers', type=int, default=8,
                              help='dataloader threads. 0 for single-thread.')
     self.parser.add_argument('--not_cuda_benchmark', action='store_true',
@@ -124,7 +127,7 @@ class opts(object):
     self.parser.add_argument('--data_cfg', type=str,
                              default='../src/lib/cfg/data.json',
                              help='load data from cfg')
-    self.parser.add_argument('--data_dir', type=str, default='/media/yytang/14T-Data/Dataset/MOT/JDE')
+    self.parser.add_argument('--data_dir', type=str, default='/Users/yutao/Dataset/MOT/JDE')
 
     # loss
     self.parser.add_argument('--mse_loss', action='store_true',
@@ -165,8 +168,66 @@ class opts(object):
     else:
       opt = self.parser.parse_args(args)
 
-    opt.gpus_str = opt.gpus
-    opt.gpus = [int(gpu) for gpu in opt.gpus.split(',')]
+    # Device selection logic
+    import torch
+    
+    # Handle new --device argument
+    if hasattr(opt, 'device') and opt.device != 'auto':
+      if opt.device == 'cpu':
+        opt.use_cuda = False
+        opt.device_name = 'cpu'
+        opt.gpus = [-1]  # Keep backward compatibility
+        opt.gpus_str = '-1'
+      elif opt.device.startswith('cuda'):
+        if torch.cuda.is_available():
+          opt.use_cuda = True
+          opt.device_name = opt.device
+          # Extract GPU number from cuda:X format
+          if ':' in opt.device:
+            gpu_id = int(opt.device.split(':')[1])
+            opt.gpus = [gpu_id]
+            opt.gpus_str = str(gpu_id)
+          else:
+            opt.gpus = [0]  # Default to cuda:0
+            opt.gpus_str = '0'
+        else:
+          print(f"WARNING: CUDA not available, falling back to CPU despite --device {opt.device}")
+          opt.use_cuda = False
+          opt.device_name = 'cpu'
+          opt.gpus = [-1]
+          opt.gpus_str = '-1'
+      else:
+        print(f"WARNING: Unknown device '{opt.device}', falling back to auto detection")
+        opt.device = 'auto'
+    
+    # Auto device detection or fallback for legacy --gpus usage
+    if not hasattr(opt, 'device') or opt.device == 'auto':
+      if torch.cuda.is_available():
+        opt.use_cuda = True
+        opt.device_name = f'cuda:{torch.cuda.current_device()}'
+        print(f"AUTO: CUDA detected, using {opt.device_name}")
+        # If using legacy --gpus, parse it; otherwise default to current device
+        if hasattr(opt, 'gpus') and opt.gpus != '2, 3':  # Check if user specified gpus
+          opt.gpus_str = opt.gpus
+          opt.gpus = [int(gpu) for gpu in opt.gpus.split(',')]
+        else:
+          current_device = torch.cuda.current_device()
+          opt.gpus = [current_device]
+          opt.gpus_str = str(current_device)
+      else:
+        opt.use_cuda = False
+        opt.device_name = 'cpu'
+        opt.gpus = [-1]
+        opt.gpus_str = '-1'
+        print("AUTO: CUDA not available, using CPU")
+    
+    # Legacy support for --gpus parameter
+    if not hasattr(opt, 'use_cuda'):  # If not set by new device logic
+      opt.gpus_str = opt.gpus
+      opt.gpus = [int(gpu) for gpu in opt.gpus.split(',')]
+      opt.use_cuda = opt.gpus[0] >= 0 if len(opt.gpus) > 0 else False
+      opt.device_name = f'cuda:{opt.gpus[0]}' if opt.use_cuda else 'cpu'
+    
     opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
 
     opt.fix_res = not opt.keep_res

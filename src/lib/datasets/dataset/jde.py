@@ -22,6 +22,7 @@ from utils.utils import xyxy2xywh, generate_anchors, xywh2xyxy, encode_delta
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=(1088, 608)):
+        self.files = []  # Initialize files list
         if os.path.isdir(path):
             image_format = ['.jpg', '.jpeg', '.png', '.tif']
             self.files = sorted(glob.glob('%s/*.*' % path))

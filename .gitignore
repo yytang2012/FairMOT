@@ -1,1 +1,39 @@
+# IDE files
 .idea
+.vscode
+*.swp
+*.swo
+
+# Dependencies
+/DCNv2
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Model files
+models/
+*.pth
+*.pkl
+
+# Datasets
+data/
+datasets/
+
+# Experiments and results
+exp/
+results/
+outputs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
