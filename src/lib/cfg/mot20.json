@@ -1,5 +1,5 @@
 {
-    "root":"/Users/yutao/Dataset/MOT/JDE/MOT20",
+    "root":"${MOT20_ROOT}",
     "train":
     {
         "mot20":"./data/mot20.train"

@@ -1,15 +1,19 @@
 import os.path as osp
 import os
 import numpy as np
+import sys
 
+# Add project root to path for config import
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from config import config
 
 def mkdirs(d):
     if not osp.exists(d):
         os.makedirs(d)
 
 
-seq_root = '/Users/yutao/Dataset/MOT/JDE/MOT20/images/train'
-label_root = '/Users/yutao/Dataset/MOT/JDE/MOT20/labels_with_ids/train'
+seq_root = config.get_dataset_path('mot20', 'train')
+label_root = config.get_dataset_path('mot20', 'labels')
 mkdirs(label_root)
 seqs = [s for s in os.listdir(seq_root)]
 

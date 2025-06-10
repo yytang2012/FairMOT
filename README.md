@@ -61,6 +61,47 @@ cd DCNv2
 ```
 * In order to run the code for demos, you also need to install [ffmpeg](https://www.ffmpeg.org/).
 
+## Device Selection
+
+FairMOT supports intuitive device selection with automatic CUDA detection:
+
+### Automatic Detection (Recommended)
+```bash
+# Automatically detect CUDA availability, use CUDA if available, otherwise use CPU
+python track.py mot --device auto --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
+
+# Or omit the --device parameter (defaults to auto)
+python track.py mot --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
+```
+
+### Force CPU Usage (for macOS or systems without CUDA)
+```bash
+python track.py mot --device cpu --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
+```
+
+### Specify GPU
+```bash
+# Use specific GPU
+python track.py mot --device cuda:0 --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
+python track.py mot --device cuda:1 --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
+```
+
+The system provides clear feedback and automatically falls back to CPU if CUDA is unavailable.
+
+## Configuration
+
+Configure dataset paths easily without modifying code:
+
+```bash
+# Set your dataset root
+export FAIRMOT_DATA_ROOT="/path/to/your/datasets"
+
+# Check current configuration
+python setup_config.py check
+```
+
+See [CONFIG_GUIDE.md](CONFIG_GUIDE.md) for details.
+
 ## Data preparation
 
 * **CrowdHuman**

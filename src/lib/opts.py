@@ -127,7 +127,13 @@ class opts(object):
     self.parser.add_argument('--data_cfg', type=str,
                              default='../src/lib/cfg/data.json',
                              help='load data from cfg')
-    self.parser.add_argument('--data_dir', type=str, default='/Users/yutao/Dataset/MOT/JDE')
+    # Import config at runtime to avoid circular imports
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+    from config import get_data_root
+    
+    self.parser.add_argument('--data_dir', type=str, default=get_data_root())
 
     # loss
     self.parser.add_argument('--mse_loss', action='store_true',
