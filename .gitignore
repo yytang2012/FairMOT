@@ -1,4 +1,3 @@
-models/
 *.local.json
 
 # IDE files
@@ -37,7 +36,6 @@ models/
 
 # Datasets and data
 data/
-datasets/
 *.jpg
 *.jpeg
 *.png

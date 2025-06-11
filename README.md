@@ -248,7 +248,7 @@ python track.py mot --load_model ../models/fairmot_dla34.pth --device auto --con
 ```bash
 cd src
 # MOT20 validation (recommended conf_thres: 0.3)
-python track.py mot --val_mot20 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.3
+python track.py mot --val_mot20 True --load_model ../models/mot20_fairmot.pth --conf_thres 0.3
 
 # MOT17 validation (recommended conf_thres: 0.4) 
 python track.py mot --val_mot17 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.4
