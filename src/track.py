@@ -265,6 +265,16 @@ if __name__ == '__main__':
                       MOT20-08
                       '''
         data_root = os.path.join(opt.data_dir, 'MOT20/images/test')
+    if opt.val_mot20_mini:
+        seqs_str = '''MOT20-01
+                      MOT20-02
+                      '''
+        data_root = os.path.join(opt.data_dir, 'MOT20_mini/images/train')
+    if opt.test_mot20_mini:
+        seqs_str = '''MOT20-01
+                      MOT20-02
+                      '''
+        data_root = os.path.join(opt.data_dir, 'MOT20_mini/images/train')
     seqs = [seq.strip() for seq in seqs_str.split()]
 
     main(opt,

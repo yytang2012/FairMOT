@@ -8,7 +8,7 @@ import sys
 
 def get_data_root():
     """Get the data root directory from environment variable or use current dataset path"""
-    return os.environ.get('FAIRMOT_DATA_ROOT', '/media/yytang/14T/Dataset/MOT/JDE')
+    return os.environ.get('FAIRMOT_DATA_ROOT', '/path/to/your/datasets')
 
 def check_config():
     """Check current data root configuration"""
