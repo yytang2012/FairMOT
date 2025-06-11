@@ -12,11 +12,93 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-
-from dcn_v2 import DCN
+from torchvision.ops import deform_conv2d
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
+
+
+class DCN(nn.Module):
+    """Deformable Convolution using torchvision.ops.deform_conv2d"""
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, 
+                 padding=0, dilation=1, deformable_groups=1):
+        super(DCN, self).__init__()
+        
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
+        self.stride = stride if isinstance(stride, tuple) else (stride, stride)  
+        self.padding = padding if isinstance(padding, tuple) else (padding, padding)
+        self.dilation = dilation if isinstance(dilation, tuple) else (dilation, dilation)
+        
+        # Convolution weights and bias
+        self.weight = nn.Parameter(
+            torch.Tensor(out_channels, in_channels, *self.kernel_size)
+        )
+        self.bias = nn.Parameter(torch.Tensor(out_channels))
+        
+        # Offset and mask generation layer
+        channels_ = 3 * self.kernel_size[0] * self.kernel_size[1]
+        self.conv_offset_mask = nn.Conv2d(
+            in_channels, 
+            channels_,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
+            bias=True
+        )
+        
+        self.init_weights()
+    
+    def init_weights(self):
+        """Initialize weights"""
+        n = self.in_channels
+        for k in self.kernel_size:
+            n *= k
+        stdv = 1.0 / math.sqrt(n)
+        self.weight.data.uniform_(-stdv, stdv)
+        self.bias.data.zero_()
+        
+        # Initialize offset and mask generation layer to zero
+        self.conv_offset_mask.weight.data.zero_()
+        self.conv_offset_mask.bias.data.zero_()
+    
+    def forward(self, x):
+        """Forward pass"""
+        # Generate offset and mask
+        out = self.conv_offset_mask(x)
+        
+        # Split offset and mask
+        o1, o2, mask = torch.chunk(out, 3, dim=1)
+        offset = torch.cat((o1, o2), dim=1)
+        mask = torch.sigmoid(mask)
+        
+        # Apply deformable convolution
+        return deform_conv2d(
+            x, offset, self.weight, self.bias,
+            stride=self.stride,
+            padding=self.padding, 
+            dilation=self.dilation,
+            mask=mask
+        )
+
+
+class DeformConv(nn.Module):
+    """Deformable Convolution with BatchNorm and ReLU"""
+    def __init__(self, chi, cho):
+        super(DeformConv, self).__init__()
+        self.actf = nn.Sequential(
+            nn.BatchNorm2d(cho, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True)
+        )
+        self.conv = DCN(chi, cho, kernel_size=3, stride=1, padding=1, dilation=1)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.actf(x)
+        return x
+
 
 def get_model_url(data='imagenet', name='dla34', hash='ba72cf86'):
     return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
@@ -342,19 +424,6 @@ def fill_up_weights(up):
         w[c, 0, :, :] = w[0, 0, :, :]
 
 
-class DeformConv(nn.Module):
-    def __init__(self, chi, cho):
-        super(DeformConv, self).__init__()
-        self.actf = nn.Sequential(
-            nn.BatchNorm2d(cho, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=True)
-        )
-        self.conv = DCN(chi, cho, kernel_size=(3,3), stride=1, padding=1, dilation=1, deformable_groups=1)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.actf(x)
-        return x
 
 
 class IDAUp(nn.Module):

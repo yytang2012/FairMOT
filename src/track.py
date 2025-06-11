@@ -120,7 +120,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo',
          save_images=False, save_videos=False, show_image=True):
     logger.setLevel(logging.INFO)
-    result_root = os.path.join(data_root, '..', 'results', exp_name)
+    # Output results to FairMOT main directory instead of data directory
+    fairmot_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    result_root = os.path.join(fairmot_root, 'results', exp_name)
     mkdir_if_missing(result_root)
     data_type = 'mot'
 
@@ -129,7 +131,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     n_frame = 0
     timer_avgs, timer_calls = [], []
     for seq in seqs:
-        output_dir = os.path.join(data_root, '..', 'outputs', exp_name, seq) if save_images or save_videos else None
+        output_dir = os.path.join(fairmot_root, 'outputs', exp_name, seq) if save_images or save_videos else None
         logger.info('start seq: {}'.format(seq))
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
@@ -250,11 +252,7 @@ if __name__ == '__main__':
                       TUD-Stadtmitte'''
         data_root = os.path.join(opt.data_dir, 'MOT15/images/train')
     if opt.val_mot20:
-        seqs_str = '''MOT20-01
-                      MOT20-02
-                      MOT20-03
-                      MOT20-05
-                      '''
+        seqs_str = '''MOT20-01'''
         data_root = os.path.join(opt.data_dir, 'MOT20/images/train')
     if opt.test_mot20:
         seqs_str = '''MOT20-04

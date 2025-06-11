@@ -5,12 +5,91 @@ from copy import copy
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
-from PIL import Image
 from torch.cuda import amp
-from dcn_v2 import DCN
+from torchvision.ops import deform_conv2d
+
+
+class DCN(nn.Module):
+    """Deformable Convolution using torchvision.ops.deform_conv2d"""
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, 
+                 padding=0, dilation=1, deformable_groups=1):
+        super(DCN, self).__init__()
+        
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
+        self.stride = stride if isinstance(stride, tuple) else (stride, stride)  
+        self.padding = padding if isinstance(padding, tuple) else (padding, padding)
+        self.dilation = dilation if isinstance(dilation, tuple) else (dilation, dilation)
+        
+        # Convolution weights and bias
+        self.weight = nn.Parameter(
+            torch.Tensor(out_channels, in_channels, *self.kernel_size)
+        )
+        self.bias = nn.Parameter(torch.Tensor(out_channels))
+        
+        # Offset and mask generation layer
+        channels_ = 3 * self.kernel_size[0] * self.kernel_size[1]
+        self.conv_offset_mask = nn.Conv2d(
+            in_channels, 
+            channels_,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
+            bias=True
+        )
+        
+        self.init_weights()
+    
+    def init_weights(self):
+        """Initialize weights"""
+        n = self.in_channels
+        for k in self.kernel_size:
+            n *= k
+        stdv = 1.0 / math.sqrt(n)
+        self.weight.data.uniform_(-stdv, stdv)
+        self.bias.data.zero_()
+        
+        # Initialize offset and mask generation layer to zero
+        self.conv_offset_mask.weight.data.zero_()
+        self.conv_offset_mask.bias.data.zero_()
+    
+    def forward(self, x):
+        """Forward pass"""
+        # Generate offset and mask
+        out = self.conv_offset_mask(x)
+        
+        # Split offset and mask
+        o1, o2, mask = torch.chunk(out, 3, dim=1)
+        offset = torch.cat((o1, o2), dim=1)
+        mask = torch.sigmoid(mask)
+        
+        # Apply deformable convolution
+        return deform_conv2d(
+            x, offset, self.weight, self.bias,
+            stride=self.stride,
+            padding=self.padding, 
+            dilation=self.dilation,
+            mask=mask
+        )
+
+
+class DeConvDCN(nn.Module):
+    """Transposed convolution with DCN"""
+    def __init__(self, c1, c2, k=4, s=2, p=1, g=1):
+        super(DeConvDCN, self).__init__()
+        self.upsample = nn.ConvTranspose2d(c1, c2, k, s, p, groups=g, bias=False)
+        self.dcn = DCN(c2, c2, kernel_size=3, stride=1, padding=1)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = nn.SiLU()
+
+    def forward(self, x):
+        x = self.upsample(x)
+        x = self.dcn(x)
+        return self.act(self.bn(x))
 
 
 def autopad(k, p=None):  # kernel, padding
@@ -71,33 +150,6 @@ def fill_up_weights(up):
         w[c, 0, :, :] = w[0, 0, :, :]
 
 
-class DeConvDCN(nn.Module):
-    # convtranspose with dcn
-    def __init__(self, c1, c2, k=4, s=2):
-        super(DeConvDCN, self).__init__()
-        self.layers = []
-        dcn = DCN(c1, c2,
-                 kernel_size=(3, 3), stride=1,
-                 padding=1, dilation=1, deformable_groups=1)
-        deconv = nn.ConvTranspose2d(
-            in_channels=c2,
-            out_channels=c2,
-            kernel_size=k,
-            stride=s,
-            padding=1,
-            output_padding=0,
-            bias=False)
-        fill_up_weights(deconv)
-        self.layers.append(dcn)
-        self.layers.append(nn.BatchNorm2d(c2))
-        self.layers.append(nn.SiLU())
-        self.layers.append(deconv)
-        self.layers.append(nn.BatchNorm2d(c2))
-        self.layers.append(nn.SiLU())
-        self.layers = nn.Sequential(*self.layers)
-
-    def forward(self, x):
-        return self.layers(x)
 
 
 class TransformerLayer(nn.Module):

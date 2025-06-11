@@ -1,39 +1,88 @@
+models/
+
 # IDE files
-.idea
-.vscode
+.idea/
+.vscode/
 *.swp
 *.swo
+*~
 
-# Dependencies
-/DCNv2
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
+dist/
+build/
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # Model files
 models/
 *.pth
 *.pkl
+*.ckpt
+*.pt
 
-# Datasets
+# Datasets and data
 data/
 datasets/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.avi
+*.mov
 
 # Experiments and results
 exp/
+experiments/
 results/
 outputs/
+runs/
+wandb/
+tensorboard/
+
+# Configuration
+config.yaml
+config.json
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
+logs/
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
+
+# C extensions
+*.c
+*.cpp
+*.cu
+*.h
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar

@@ -45,19 +45,17 @@ There has been remarkable progress on object detection and re-identification in 
 conda create -n FairMOT
 conda activate FairMOT
 conda install pytorch==1.7.0 torchvision==0.8.0 cudatoolkit=10.2 -c pytorch
+
+# For CUDA 12.4
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+
+# For CUDA 12.8
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu128
 
 
 cd ${FAIRMOT_ROOT}
 pip install cython
 pip install -r requirements.txt
-```
-* We use [DCNv2_pytorch_1.7](https://github.com/ifzhang/DCNv2/tree/pytorch_1.7) in our backbone network (pytorch_1.7 branch). Previous versions can be found in [DCNv2](https://github.com/CharlesShang/DCNv2).
-```
-git clone -b pytorch_1.7 https://github.com/ifzhang/DCNv2.git
-git clone https://github.com/jinfagang/DCNv2_latest.git DCNv2
-cd DCNv2
-./make.sh
 ```
 * In order to run the code for demos, you also need to install [ffmpeg](https://www.ffmpeg.org/).
 
