@@ -1,4 +1,4 @@
-# FairMOT Configuration
+# FairMOT Simple Configuration
 
 Configure your dataset path easily without modifying code.
 
@@ -6,10 +6,8 @@ Configure your dataset path easily without modifying code.
 
 ```bash
 # Check current configuration
-python setup_config.py check
-
-# Interactive setup
-python setup_config.py setup
+cd src
+python -m lib.config check
 ```
 
 ## Set Dataset Path
@@ -19,11 +17,8 @@ python setup_config.py setup
 export FAIRMOT_DATA_ROOT="/path/to/your/datasets"
 ```
 
-### Option 2: .env File
-Create `.env` in project root:
-```
-FAIRMOT_DATA_ROOT=/path/to/your/datasets
-```
+### Option 2: Edit Default Path
+Edit `src/lib/config.py` and change the default path.
 
 ## Expected Dataset Structure
 
@@ -53,4 +48,3 @@ python track.py mot --test_mot20 True --load_model ../models/fairmot_dla34.pth
 python gen_labels_20.py
 ```
 
-No code changes needed - just set `FAIRMOT_DATA_ROOT` and go!

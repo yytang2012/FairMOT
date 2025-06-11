@@ -237,39 +237,38 @@ The pretrained model of yolov5s on the COCO dataset can be downloaded here:  [[G
 The model of the light version 'fairmot_yolov5s' can be downloaded here:  [[Google]](https://drive.google.com/file/d/1MEvsRPyoAqYSCdKaS5Ofrl7ZfKbBZ1Jb/view?usp=sharing) [[Baidu, code:2y3a]](https://pan.baidu.com/s/1dyBEeiGpRfZhqae0c264rg).
 
 ## Tracking
-* The default settings run tracking on the validation dataset from 2DMOT15. Using the baseline model, you can run:
-```
-cd src
-python track.py mot --load_model ../models/fairmot_dla34.pth --conf_thres 0.6
-```
-to see the tracking results (76.5 MOTA and 79.3 IDF1 using the baseline model). You can also set save_images=True in src/track.py to save the visualization results of each frame. 
-* For ablation study, we evaluate on the other half of the training set of MOT17, you can run:
-```
-cd src
-python track_half.py mot --load_model ../exp/mot/mix_mot17_half_dla34.pth --conf_thres 0.4 --val_mot17 True
-```
-If you use our pretrained model 'mix_mot17_half_dla34.pth', you can get 69.1 MOTA and 72.8 IDF1. 
-* To get the txt results of the test set of MOT16 or MOT17, you can run:
-```
-cd src
-python track.py mot --test_mot17 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.4
-python track.py mot --test_mot16 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.4
-```
-* To run tracking using the light version of FairMOT (68.5 MOTA on the test of MOT17), you can run:
-```
-cd src
-python track.py mot --test_mot17 True --load_model ../models/fairmot_yolov5s.pth --conf_thres 0.4 --arch yolo --reid_dim 64
-```
-and send the txt files to the [MOT challenge](https://motchallenge.net) evaluation server to get the results. (You can get the SOTA results 73+ MOTA on MOT17 test set using the baseline model 'fairmot_dla34.pth'.)
 
-* To get the SOTA results of 2DMOT15 and MOT20, run the tracking code:
-```
+### Quick Start
+```bash
 cd src
-python track.py mot --test_mot15 True --load_model your_mot15_model.pth --conf_thres 0.3
-python track.py mot --test_mot20 True --load_model your_mot20_model.pth --conf_thres 0.3
-python track.py mot --test_mot20 True --gpu 0 --load_model ../models/mot20_20epoch.pth --conf_thres 0.3
+python track.py mot --load_model ../models/fairmot_dla34.pth --device auto --conf_thres 0.6
 ```
-Results of the test set all need to be evaluated on the MOT challenge server. You can see the tracking results on the training set by setting --val_motxx True and run the tracking code. We set 'conf_thres' 0.4 for MOT16 and MOT17. We set 'conf_thres' 0.3 for 2DMOT15 and MOT20. 
+
+### Evaluation on Validation Sets (with ground truth)
+```bash
+cd src
+# MOT20 validation (recommended conf_thres: 0.3)
+python track.py mot --val_mot20 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.3
+
+# MOT17 validation (recommended conf_thres: 0.4) 
+python track.py mot --val_mot17 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.4
+```
+
+### Generate Results for MOT Challenge Submission
+```bash
+cd src
+# MOT17 test set
+python track.py mot --test_mot17 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.4
+
+# MOT20 test set  
+python track.py mot --test_mot20 True --load_model ../models/fairmot_dla34.pth --conf_thres 0.3
+```
+
+### Key Parameters
+- `--device auto`: Automatically detects CUDA or uses CPU
+- `--conf_thres`: Confidence threshold (0.3 for MOT20, 0.4 for MOT17)
+- `--val_motxx`: Validation sets with evaluation metrics
+- `--test_motxx`: Test sets for challenge submission (no ground truth) 
 
 ## Demo
 You can input a raw video and get the demo video by running src/demo.py and get the mp4 format of the demo video:

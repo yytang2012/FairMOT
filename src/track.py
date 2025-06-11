@@ -252,7 +252,11 @@ if __name__ == '__main__':
                       TUD-Stadtmitte'''
         data_root = os.path.join(opt.data_dir, 'MOT15/images/train')
     if opt.val_mot20:
-        seqs_str = '''MOT20-01'''
+        seqs_str = '''MOT20-01
+                      MOT20-02
+                      MOT20-03
+                      MOT20-05
+                      '''
         data_root = os.path.join(opt.data_dir, 'MOT20/images/train')
     if opt.test_mot20:
         seqs_str = '''MOT20-04
