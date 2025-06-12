@@ -5,9 +5,8 @@ import os
 import sys
 import argparse
 
-# Add src path for importing utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-from lib.utils.data_utils import get_data_dir, print_setup_instructions
+# Import data_utils from the same directory
+from data_utils import get_data_dir, print_setup_instructions
 
 
 def convert_all_datasets():

@@ -7,9 +7,8 @@ import numpy as np
 import json
 import cv2
 
-# Add src path for importing utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-from lib.utils.data_utils import get_mot20_datadir
+# Import data_utils from the same directory
+from data_utils import get_mot20_datadir
 
 
 def convert_mot20_to_coco():
