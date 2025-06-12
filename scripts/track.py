@@ -2,8 +2,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import _init_paths
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'lib'))
 import os.path as osp
 import cv2
 import logging
@@ -257,14 +259,14 @@ if __name__ == '__main__':
                       MOT20-03
                       MOT20-05
                       '''
-        data_root = os.path.join(opt.data_dir, 'MOT20/images/train')
+        data_root = os.path.join(opt.data_dir, 'MOT20/train')
     if opt.test_mot20:
         seqs_str = '''MOT20-04
                       MOT20-06
                       MOT20-07
                       MOT20-08
                       '''
-        data_root = os.path.join(opt.data_dir, 'MOT20/images/test')
+        data_root = os.path.join(opt.data_dir, 'MOT20/test')
     if opt.val_mot20_mini:
         seqs_str = '''MOT20-01
                       MOT20-02

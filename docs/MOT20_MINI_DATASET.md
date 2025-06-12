@@ -321,4 +321,3 @@ else:
     config_path = 'lib/cfg/mot20.json'
 ```
 
-This approach allows seamless switching between mini and full datasets during development.

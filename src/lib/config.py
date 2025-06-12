@@ -8,7 +8,24 @@ import sys
 
 def get_data_root():
     """Get the data root directory from environment variable or use current dataset path"""
-    return os.environ.get('FAIRMOT_DATA_ROOT', '/path/to/your/datasets')
+    # First try the general environment variable DATA_ROOT
+    if 'DATA_ROOT' in os.environ:
+        return os.environ['DATA_ROOT']
+    
+    # Compatible with legacy FairMOT environment variable
+    if 'FAIRMOT_DATA_ROOT' in os.environ:
+        return os.environ['FAIRMOT_DATA_ROOT']
+    
+    # Try ByteTrack compatible environment variable
+    if 'YOLOX_DATADIR' in os.environ:
+        return os.environ['YOLOX_DATADIR']
+    
+    # Default to use datasets folder in project root directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(current_dir))  # Go up two levels from src/lib
+    default_path = os.path.join(project_root, 'datasets')
+    
+    return default_path
 
 def check_config():
     """Check current data root configuration"""
@@ -31,7 +48,10 @@ def check_config():
     if not found_datasets:
         print("\nNo datasets found!")
         print("To configure your data path:")
+        print("export DATA_ROOT=/path/to/your/datasets")
+        print("# Or use legacy variables:")
         print("export FAIRMOT_DATA_ROOT=/path/to/your/datasets")
+        print("export YOLOX_DATADIR=/path/to/your/datasets  # ByteTrack compatibility")
     else:
         print(f"\nFound {len(found_datasets)} dataset(s). Ready to use!")
 

@@ -73,13 +73,13 @@ The system automatically detects if CUDA is available:
 
 ```bash
 # Automatic detection (recommended)
-python track.py mot --test_mot20 True --load_model ../models/fairmot_dla34.pth
+python track.py mot --test_mot20 True --load_model ../models/mot20_fairmot.pth
 
 # Force CPU usage
-python track.py mot --test_mot20 True --load_model ../models/fairmot_dla34.pth --device cpu
+python track.py mot --test_mot20 True --load_model ../models/mot20_fairmot.pth --device cpu
 
 # Try CUDA (will fallback to CPU if unavailable)
-python track.py mot --test_mot20 True --load_model ../models/fairmot_dla34.pth --device cuda
+python track.py mot --test_mot20 True --load_model ../models/mot20_fairmot.pth --device cuda
 ```
 
 ## Common Issues
