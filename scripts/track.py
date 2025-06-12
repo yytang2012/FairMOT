@@ -13,13 +13,16 @@ import argparse
 import motmetrics as mm
 import numpy as np
 import torch
+from datetime import datetime
 
 from tracker.multitracker import JDETracker
 from tracking_utils import visualization as vis
 from tracking_utils.log import logger
 from tracking_utils.timer import Timer
 from tracking_utils.evaluation import Evaluator
+# Use original FairMOT dataset format (not ByteTrack format)
 import datasets.dataset.jde as datasets
+# Alternative: import datasets.dataset.jde_yolov5 as datasets  # for ByteTrack format
 
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
@@ -148,9 +151,14 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         timer_calls.append(tc)
 
         # eval
-        logger.info('Evaluate seq: {}'.format(seq))
-        evaluator = Evaluator(data_root, seq, data_type)
-        accs.append(evaluator.eval_file(result_filename))
+        gt_path = os.path.join(data_root, seq, 'gt', 'gt.txt')
+        if os.path.exists(gt_path):
+            logger.info('Evaluate seq: {}'.format(seq))
+            evaluator = Evaluator(data_root, seq, data_type)
+            accs.append(evaluator.eval_file(result_filename))
+        else:
+            logger.info('No ground truth found for {} - skipping evaluation (test set)'.format(seq))
+            accs.append(None)
         if save_videos:
             output_video_path = osp.join(output_dir, '{}.mp4'.format(seq))
             cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -c:v copy {}'.format(output_dir, output_video_path)
@@ -161,17 +169,28 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     avg_time = all_time / np.sum(timer_calls)
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 
-    # get summary
-    metrics = mm.metrics.motchallenge_metrics
-    mh = mm.metrics.create()
-    summary = Evaluator.get_summary(accs, seqs, metrics)
-    strsummary = mm.io.render_summary(
-        summary,
-        formatters=mh.formatters,
-        namemap=mm.io.motchallenge_metric_names
-    )
-    print(strsummary)
-    Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
+    # get summary (only for sequences with ground truth)
+    valid_accs = [acc for acc in accs if acc is not None]
+    valid_seqs = [seq for seq, acc in zip(seqs, accs) if acc is not None]
+    
+    if valid_accs:
+        metrics = mm.metrics.motchallenge_metrics
+        mh = mm.metrics.create()
+        summary = Evaluator.get_summary(valid_accs, valid_seqs, metrics)
+        strsummary = mm.io.render_summary(
+            summary,
+            formatters=mh.formatters,
+            namemap=mm.io.motchallenge_metric_names
+        )
+        print(strsummary)
+        Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
+    else:
+        print("No ground truth available for evaluation (test set). Results saved to:")
+        for seq in seqs:
+            result_file = os.path.join(result_root, '{}.txt'.format(seq))
+            if os.path.exists(result_file):
+                print(f"  {seq}: {result_file}")
+        print(f"All results saved in: {result_root}")
 
 
 if __name__ == '__main__':
@@ -278,11 +297,20 @@ if __name__ == '__main__':
                       '''
         data_root = os.path.join(opt.data_dir, 'MOT20_mini/images/train')
     seqs = [seq.strip() for seq in seqs_str.split()]
+    
+    # Generate dynamic experiment name based on dataset and timestamp
+    dataset_name = "MOT20" if opt.test_mot20 or opt.val_mot20 or opt.test_mot20_mini or opt.val_mot20_mini else \
+                   "MOT17" if opt.test_mot17 or opt.val_mot17 else \
+                   "MOT16" if opt.test_mot16 or opt.val_mot16 else \
+                   "MOT15" if opt.test_mot15 or opt.val_mot15 else "MOT"
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    exp_name = f"{dataset_name}/{timestamp}"
 
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='MOT17_test_public_dla34',
+         exp_name=exp_name,
          show_image=False,
          save_images=False,
          save_videos=False)

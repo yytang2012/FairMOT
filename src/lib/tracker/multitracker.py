@@ -176,10 +176,14 @@ class JDETracker(object):
         else:
             opt.device = torch.device('cpu')
         print('Creating model...')
+        print(f'Model architecture: {opt.arch}')
+        print(f'Model heads: {opt.heads}')
+        print(f'Loading model from: {opt.load_model}')
         self.model = create_model(opt.arch, opt.heads, opt.head_conv)
         self.model = load_model(self.model, opt.load_model)
         self.model = self.model.to(opt.device)
         self.model.eval()
+        print('Model loaded successfully!')
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
@@ -255,7 +259,7 @@ class JDETracker(object):
         dets = self.post_process(dets, meta)
         dets = self.merge_outputs([dets])[1]
 
-        remain_inds = dets[:, 4] > self.opt.conf_thres
+        remain_inds = dets[:, 4] > self.det_thresh
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]
 

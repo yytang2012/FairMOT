@@ -4,6 +4,9 @@ from __future__ import print_function
 
 import logging
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'lib'))
 import os.path as osp
 from opts import opts
 from tracking_utils.utils import mkdir_if_missing
