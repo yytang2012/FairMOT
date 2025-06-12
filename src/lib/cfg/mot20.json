@@ -1,15 +1,15 @@
 {
-    "root":"${MOT20_ROOT}",
+    "root":".",
     "train":
     {
-        "mot20":"./data/mot20.train"
+        "mot20":"src/data/mot20_clean.train"
     },
     "test_emb":
     {
-        "mot20":"./data/mot20.train"
+        "mot20":"src/data/mot20_clean.train"
     },
     "test":
     {
-        "mot20":"./data/mot20.train"
+        "mot20":"src/data/mot20_clean.train"
     }
 }

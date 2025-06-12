@@ -16,7 +16,7 @@ def mkdirs(d):
     if not osp.exists(d):
         os.makedirs(d)
 
-def generate_labels_for_mini_dataset(dataset_root="/Users/yutao/Dataset/MOT/JDE/MOT20_mini"):
+def generate_labels_for_mini_dataset(dataset_root=None, mot20_labels_root=None):
     """
     Generate YOLO-format labels for MOT20 mini dataset.
     
@@ -27,8 +27,7 @@ def generate_labels_for_mini_dataset(dataset_root="/Users/yutao/Dataset/MOT/JDE/
         dataset_root (str): Path to the MOT20 mini dataset
     """
     
-    # Use MOT20Labels as the source for ground truth data
-    mot20_labels_root = "/Users/yutao/Dataset/MOT/JDE/MOT20Labels"
+    # MOT20Labels root will be passed as parameter or derived from environment
     
     seq_root = osp.join(dataset_root, "images", "train")
     label_root = osp.join(dataset_root, "labels_with_ids", "train")
@@ -85,9 +84,13 @@ def generate_labels_for_mini_dataset(dataset_root="/Users/yutao/Dataset/MOT/JDE/
         existing_images = set()
         if osp.exists(img_dir):
             for img_file in os.listdir(img_dir):
-                if img_file.endswith('.jpg'):
-                    frame_id = int(img_file.replace('.jpg', ''))
-                    existing_images.add(frame_id)
+                if img_file.endswith('.jpg') and not img_file.startswith('._'):
+                    try:
+                        frame_id = int(img_file.replace('.jpg', ''))
+                        existing_images.add(frame_id)
+                    except ValueError:
+                        print(f"Warning: Skipping invalid image filename: {img_file}")
+                        continue
         
         print(f"  Found {len(existing_images)} images in mini dataset")
         
@@ -190,12 +193,38 @@ Examples:
         '''
     )
     
-    parser.add_argument('--dataset_root', default="/Users/yutao/Dataset/MOT/JDE/MOT20_mini",
-                       help='MOT20 mini dataset root path (default: /Users/yutao/Dataset/MOT/JDE/MOT20_mini)')
+    parser.add_argument('--dataset_root', default=None,
+                       help='MOT20 mini dataset root path')
+    parser.add_argument('--mot20_labels_root', default=None,
+                       help='MOT20Labels dataset root path (contains ground truth annotations)')
     parser.add_argument('--validate', action='store_true',
                        help='Only validate dataset structure without generating labels')
     
     args = parser.parse_args()
+    
+    # Get data root from environment variable or command line
+    data_root = os.getenv('FAIRMOT_DATA_ROOT')
+    
+    # Set default paths if not provided
+    if args.dataset_root is None:
+        if data_root:
+            args.dataset_root = osp.join(data_root, 'MOT20_mini')
+        else:
+            print("Error: No dataset_root specified.")
+            print("Please either:")
+            print("  1. Use --dataset_root to specify the MOT20 mini dataset path")
+            print("  2. Set FAIRMOT_DATA_ROOT environment variable")
+            return 1
+            
+    if args.mot20_labels_root is None:
+        if data_root:
+            args.mot20_labels_root = osp.join(data_root, 'MOT20Labels')
+        else:
+            print("Error: No mot20_labels_root specified.")
+            print("Please either:")
+            print("  1. Use --mot20_labels_root to specify the MOT20Labels path")
+            print("  2. Set FAIRMOT_DATA_ROOT environment variable")
+            return 1
     
     # Validate dataset exists and has correct structure
     if not osp.exists(args.dataset_root):
@@ -213,7 +242,7 @@ Examples:
     
     # Generate labels
     try:
-        success = generate_labels_for_mini_dataset(args.dataset_root)
+        success = generate_labels_for_mini_dataset(args.dataset_root, args.mot20_labels_root)
         if success:
             print(f"\nLabels generated successfully at: {osp.join(args.dataset_root, 'labels_with_ids')}")
             return 0

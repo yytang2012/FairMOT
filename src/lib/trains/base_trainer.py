@@ -91,7 +91,13 @@ class BaseTrainer(object):
         if iter_id % opt.print_iter == 0:
           print('{}/{}| {}'.format(opt.task, opt.exp_id, Bar.suffix)) 
       else:
-        bar.next()
+        # Check if we're in a proper TTY environment for progress bar
+        import sys
+        if hasattr(sys.stdout, 'isatty') and sys.stdout.isatty():
+          bar.next()
+        else:
+          # Fallback to print mode for IDEs like PyCharm
+          print('{}/{}| {}'.format(opt.task, opt.exp_id, Bar.suffix))
       
       if opt.test:
         self.save_result(output, batch, results)

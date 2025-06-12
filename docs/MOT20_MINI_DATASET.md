@@ -12,24 +12,38 @@ The MOT20 mini dataset is a subset of the full MOT20 dataset designed for:
 
 ## Quick Start
 
-### 1. Create Mini Dataset
+### 1. Set Environment Variable
 
 ```bash
-cd /Users/yutao/PycharmProjects/FairMOT/src/tools/data_preparation
+export FAIRMOT_DATA_ROOT=/path/to/your/dataset/root
+# Example: export FAIRMOT_DATA_ROOT=/media/yytang/14T/Dataset/MOT/JDE/
+```
+
+### 2. Create Mini Dataset
+
+```bash
+cd /path/to/FairMOT/tools/data_preparation
 python create_mot20_mini.py
 ```
 
-### 2. Generate Training Labels
+### 3. Generate Training Labels
 
 ```bash
 python gen_labels_20_mini.py
 ```
 
-### 3. Use in Training
+### 4. Train Model
 
 ```bash
-cd /Users/yutao/PycharmProjects/FairMOT/src
-python train.py --dataset_config lib/cfg/mot20_mini.json
+cd /path/to/FairMOT
+FAIRMOT_DATA_ROOT=/path/to/your/dataset/root PYTHONPATH=/path/to/FairMOT/src/lib python scripts/train.py mot \
+    --dataset jde \
+    --data_cfg src/lib/cfg/mot20_mini.json \
+    --batch_size 2 \
+    --num_epochs 1 \
+    --lr 1e-4 \
+    --exp_id mot20_mini_test \
+    --device cuda:0
 ```
 
 ## Detailed Usage
@@ -113,28 +127,29 @@ MOT20_mini/
 
 ### Environment Setup
 
-Option 1: Set environment variable
+Set the data root environment variable:
 ```bash
-export MOT20_ROOT=/Users/yutao/Dataset/MOT/JDE/MOT20_mini
+export FAIRMOT_DATA_ROOT=/path/to/your/dataset/root
 ```
 
-Option 2: Use configuration file
-The mini dataset includes `mot20_mini.json` configuration file:
+The mini dataset includes `mot20_mini.json` configuration file with clean relative paths:
 
 ```json
 {
-    "root": "/Users/yutao/Dataset/MOT/JDE/MOT20_mini",
+    "root": "MOT20_mini",
     "train": {
-        "mot20_mini": "./data/mot20_mini.train"
+        "mot20_mini": "data/mot20_mini.train"
     },
     "test_emb": {
-        "mot20_mini": "./data/mot20_mini.train"
+        "mot20_mini": "data/mot20_mini.train"
     },
     "test": {
-        "mot20_mini": "./data/mot20_mini.train"
+        "mot20_mini": "data/mot20_mini.train"
     }
 }
 ```
+
+The training script automatically combines `FAIRMOT_DATA_ROOT` environment variable with these relative paths at runtime.
 
 ### Training Configuration
 
@@ -187,6 +202,18 @@ With default settings:
 - Check that the source dataset has the expected structure
 - Verify sequence names match (e.g., MOT20-01, MOT20-02)
 
+**Error: "ModuleNotFoundError: No module named 'datasets'"**
+- Ensure PYTHONPATH is set correctly: `PYTHONPATH=/path/to/FairMOT/src/lib`
+- The training script requires the src/lib directory to be in Python path
+
+**Error: "invalid literal for int() with base 10: '._000006'"**
+- Hidden system files (starting with `._`) are present in the dataset
+- Clean them with: `find dataset_path -name "._*" -delete`
+
+**Error: "IsADirectoryError: [Errno 21] Is a directory"**
+- The training data file contains directory paths instead of image paths
+- Regenerate with: `find images/train -name "*.jpg" | sort > data/mot20_mini.train`
+
 ### Validation
 
 Validate dataset structure:
@@ -203,13 +230,43 @@ ls -la /Users/yutao/Dataset/MOT/JDE/MOT20_mini/labels_with_ids/train/
 ## Integration with FairMOT
 
 ### Training
+
+**Basic Training Test**
 ```bash
-# Quick training test with mini dataset
-python train.py \
-    --dataset_config lib/cfg/mot20_mini.json \
-    --num_epochs 5 \
-    --batch_size 4
+cd /path/to/FairMOT
+FAIRMOT_DATA_ROOT=/path/to/your/dataset/root PYTHONPATH=/path/to/FairMOT/src/lib python scripts/train.py mot \
+    --dataset jde \
+    --data_cfg src/lib/cfg/mot20_mini.json \
+    --batch_size 2 \
+    --num_epochs 1 \
+    --lr 1e-4 \
+    --exp_id mot20_mini_test \
+    --device cuda:0
 ```
+
+**Extended Training**
+```bash
+FAIRMOT_DATA_ROOT=/path/to/your/dataset/root PYTHONPATH=/path/to/FairMOT/src/lib python scripts/train.py mot \
+    --dataset jde \
+    --data_cfg src/lib/cfg/mot20_mini.json \
+    --batch_size 4 \
+    --num_epochs 5 \
+    --lr 1e-4 \
+    --exp_id mot20_mini_extended \
+    --device cuda:0 \
+    --val_intervals 2
+```
+
+**Training Arguments**
+- `mot`: Task type (Multi-Object Tracking)
+- `--dataset jde`: Use JDE dataset format
+- `--data_cfg`: Path to dataset configuration JSON
+- `--batch_size`: Number of samples per batch (start with 2 for testing)
+- `--num_epochs`: Number of training epochs
+- `--lr`: Learning rate
+- `--exp_id`: Experiment identifier for output organization
+- `--device`: GPU device (cuda:0, cuda:1, or cpu)
+- `--val_intervals`: Run validation every N epochs
 
 ### Tracking
 ```bash

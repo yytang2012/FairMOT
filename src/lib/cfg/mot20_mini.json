@@ -1,15 +1,15 @@
 {
-    "root":"/Users/yutao/Dataset/MOT/JDE/MOT20_mini",
+    "root":".",
     "train":
     {
-        "mot20_mini":"./data/mot20_mini.train"
+        "mot20_mini":"src/data/mot20_mini.train"
     },
     "test_emb":
     {
-        "mot20_mini":"./data/mot20_mini.train"
+        "mot20_mini":"src/data/mot20_mini.train"
     },
     "test":
     {
-        "mot20_mini":"./data/mot20_mini.train"
+        "mot20_mini":"src/data/mot20_mini.train"
     }
 }

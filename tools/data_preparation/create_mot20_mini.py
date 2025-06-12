@@ -13,8 +13,8 @@ import argparse
 from pathlib import Path
 
 def create_mini_dataset(
-    source_root="/Users/yutao/Dataset/MOT/JDE/MOT20",
-    output_root="/Users/yutao/Dataset/MOT/JDE/MOT20_mini",
+    source_root=None,
+    output_root=None,
     sequences=["MOT20-01", "MOT20-02"], 
     frame_limit=100,
     skip_frames=5
@@ -201,10 +201,10 @@ Examples:
         '''
     )
     
-    parser.add_argument('--source', default="/Users/yutao/Dataset/MOT/JDE/MOT20",
-                       help='Source MOT20 dataset path (default: /Users/yutao/Dataset/MOT/JDE/MOT20)')
-    parser.add_argument('--output', default="/Users/yutao/Dataset/MOT/JDE/MOT20_mini",
-                       help='Output mini dataset path (default: /Users/yutao/Dataset/MOT/JDE/MOT20_mini)')
+    parser.add_argument('--source', default=None,
+                       help='Source MOT20 dataset path')
+    parser.add_argument('--output', default=None,
+                       help='Output mini dataset path')
     parser.add_argument('--sequences', nargs='+', default=["MOT20-01", "MOT20-02"],
                        help='Sequences to include (default: MOT20-01 MOT20-02)')
     parser.add_argument('--frames', type=int, default=100,
@@ -213,6 +213,30 @@ Examples:
                        help='Skip frames interval - take every Nth frame (default: 5)')
     
     args = parser.parse_args()
+    
+    # Get data root from environment variable or command line
+    data_root = os.getenv('FAIRMOT_DATA_ROOT')
+    
+    # Set default paths if not provided
+    if args.source is None:
+        if data_root:
+            args.source = os.path.join(data_root, 'MOT20')
+        else:
+            print("Error: No source path specified.")
+            print("Please either:")
+            print("  1. Use --source to specify the MOT20 dataset path")
+            print("  2. Set FAIRMOT_DATA_ROOT environment variable")
+            return 1
+            
+    if args.output is None:
+        if data_root:
+            args.output = os.path.join(data_root, 'MOT20_mini')
+        else:
+            print("Error: No output path specified.")
+            print("Please either:")
+            print("  1. Use --output to specify the output path")
+            print("  2. Set FAIRMOT_DATA_ROOT environment variable")
+            return 1
     
     # Validate source dataset exists
     if not os.path.exists(args.source):

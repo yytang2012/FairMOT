@@ -1,7 +1,3 @@
-# from __future__ import absolute_import
-# from __future__ import division
-# from __future__ import print_function
-
 import json
 import os
 
@@ -22,18 +18,50 @@ def main(opt):
 
     print('Setting up data...')
     Dataset = get_dataset(opt.dataset, opt.task)
+    
+    # Load data config
     f = open(opt.data_cfg)
     data_config = json.load(f)
-    trainset_paths = data_config['train']
-    dataset_root = data_config['root']
     f.close()
+    
+    # Get base data root from environment
+    fairmot_data_root = os.environ.get('FAIRMOT_DATA_ROOT')
+    if not fairmot_data_root:
+        raise ValueError("FAIRMOT_DATA_ROOT environment variable is not set")
+    
+    # Determine dataset root based on config name
+    config_name = os.path.basename(opt.data_cfg).replace('.json', '')
+    
+    if 'mini' in config_name:
+        # Mini datasets: FAIRMOT_DATA_ROOT/MOT20_mini
+        base_name = config_name.replace('_mini', '').upper()  # mot20_mini -> MOT20
+        dataset_root = os.path.join(fairmot_data_root, f"{base_name}_mini")
+    else:
+        # Full datasets: FAIRMOT_DATA_ROOT/MOT20, MOT17, etc.
+        dataset_root = os.path.join(fairmot_data_root, config_name.upper())
+    
+    # Join with config root if specified
+    if data_config['root'] != '.':
+        dataset_root = os.path.join(dataset_root, data_config['root'])
+    
+    # Build training paths - support both absolute project paths and relative dataset paths
+    trainset_paths = {}
+    for dataset_name, path in data_config['train'].items():
+        if path.startswith('src/'):
+            # Project-relative path (like src/data/mot20.train)
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            trainset_paths[dataset_name] = os.path.join(project_root, path)
+        else:
+            # Dataset-relative path
+            if path.startswith('./'):
+                path = path[2:]
+            trainset_paths[dataset_name] = os.path.join(dataset_root, path)
     transforms = T.Compose([T.ToTensor()])
     dataset = Dataset(opt, dataset_root, trainset_paths, (1088, 608), augment=True, transforms=transforms)
     opt = opts().update_dataset_info_and_set_heads(opt, dataset)
     print(opt)
 
     logger = Logger(opt)
-
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
 
