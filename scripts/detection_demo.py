@@ -5,6 +5,11 @@ from __future__ import print_function
 import argparse
 import glob
 import os
+import sys
+
+# Add src path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'lib'))
 
 import cv2
 import numpy as np
