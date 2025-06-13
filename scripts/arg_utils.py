@@ -59,9 +59,9 @@ def add_dataset_args(parser):
     """Add dataset-related arguments"""
     parser.add_argument('--data_dir', type=str, default='',
                        help='Dataset root directory')
-    parser.add_argument('--dataset', type=str, default='MOT16',
+    parser.add_argument('--dataset', type=str, default='MOT20',
                        choices=['MOT15', 'MOT16', 'MOT17', 'MOT20', 'MOT20_mini'],
-                       help='Dataset name')
+                       help='Dataset name (default: MOT20)')
     parser.add_argument('--split', type=str, default='val',
                        choices=['train', 'val', 'test', 'train_half', 'val_half'],
                        help='Dataset split: train/val/test (traditional), train_half/val_half (ByteTrack style)')
@@ -109,6 +109,34 @@ def add_track_args(parser):
                        help='Save individual frame images')
 
 
+def add_train_args(parser):
+    """Add training specific arguments"""
+    parser.add_argument('--num_epochs', type=int, default=30,
+                       help='Total number of training epochs')
+    parser.add_argument('--batch_size', type=int, default=4,
+                       help='Training batch size')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                       help='Learning rate')
+    parser.add_argument('--lr_step', type=str, default='20,27',
+                       help='Learning rate decay epochs (comma separated)')
+    parser.add_argument('--val_intervals', type=int, default=5,
+                       help='Validation interval in epochs (0 to disable)')
+    parser.add_argument('--save_dir', type=str, default='./exp',
+                       help='Directory to save models and logs')
+    parser.add_argument('--exp_id', type=str, default='default',
+                       help='Experiment ID for this training run')
+    parser.add_argument('--resume', action='store_true',
+                       help='Resume training from checkpoint')
+    parser.add_argument('--num_workers', type=int, default=4,
+                       help='Number of data loading workers')
+    parser.add_argument('--seed', type=int, default=317,
+                       help='Random seed for reproducibility')
+    parser.add_argument('--not_cuda_benchmark', action='store_true',
+                       help='Disable CUDA benchmark mode')
+    parser.add_argument('--save_all', action='store_true',
+                       help='Save model at every epoch')
+
+
 def create_demo_parser():
     """Create argument parser for demo script"""
     parser = argparse.ArgumentParser(
@@ -137,6 +165,23 @@ def create_track_parser():
     add_track_args(parser)
     add_dataset_args(parser)
     add_tracking_args(parser)
+    add_model_args(parser)
+    add_input_args(parser)
+    add_device_args(parser)
+    
+    return parser
+
+
+def create_train_parser():
+    """Create argument parser for training script"""
+    parser = argparse.ArgumentParser(
+        description='FairMOT Training - Train MOT model with validation',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Add argument groups
+    add_train_args(parser)
+    add_dataset_args(parser)
     add_model_args(parser)
     add_input_args(parser)
     add_device_args(parser)
@@ -282,6 +327,81 @@ def process_track_args(args):
     return args
 
 
+def process_train_args(args):
+    """Process and validate training arguments"""
+    args = process_common_args(args)
+    
+    # Set default dataset to MOT20 if not specified
+    if not hasattr(args, 'dataset') or not args.dataset:
+        args.dataset = 'MOT20'
+    
+    # Parse learning rate steps
+    if isinstance(args.lr_step, str):
+        args.lr_step = [int(step.strip()) for step in args.lr_step.split(',')]
+    
+    # Set up experiment directory
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not args.save_dir or args.save_dir == './exp':
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        args.save_dir = os.path.join(script_dir, 'exp', f"{args.dataset}_{args.exp_id}_{timestamp}")
+    
+    # Ensure save directory exists
+    os.makedirs(args.save_dir, exist_ok=True)
+    
+    # Set up data paths based on dataset
+    if args.dataset == 'MOT20':
+        dataset_root = os.path.join(args.data_dir, 'MOT20')
+        args.train_json = os.path.join(dataset_root, 'annotations', 'train_half.json')
+        args.val_json = os.path.join(dataset_root, 'annotations', 'val_half.json')
+    elif args.dataset == 'MOT16':
+        dataset_root = os.path.join(args.data_dir, 'MOT16')
+        args.train_json = os.path.join(dataset_root, 'annotations', 'train_half.json')
+        args.val_json = os.path.join(dataset_root, 'annotations', 'val_half.json')
+    elif args.dataset == 'MOT17':
+        dataset_root = os.path.join(args.data_dir, 'MOT17')
+        args.train_json = os.path.join(dataset_root, 'annotations', 'train_half.json')
+        args.val_json = os.path.join(dataset_root, 'annotations', 'val_half.json')
+    else:
+        # Generic dataset setup
+        dataset_root = os.path.join(args.data_dir, args.dataset)
+        args.train_json = os.path.join(dataset_root, 'annotations', 'train_half.json')
+        args.val_json = os.path.join(dataset_root, 'annotations', 'val_half.json')
+    
+    # Verify annotation files exist
+    if not os.path.exists(args.train_json):
+        print(f"Warning: Training annotation file not found: {args.train_json}")
+        print(f"Please run convert_mot20_to_coco.py or ensure you have the correct dataset in {dataset_root}")
+        # For now, create fallback paths
+        args.train_json = os.path.join(dataset_root, 'annotations', 'train.json')
+        args.val_json = os.path.join(dataset_root, 'annotations', 'val.json')
+        
+    if not os.path.exists(args.val_json):
+        print(f"Warning: Validation annotation file not found: {args.val_json}")
+        print("Will disable validation for this run")
+        args.val_intervals = 0  # Disable validation
+    
+    # Set up default pretrained model if not specified
+    if not args.load_model:
+        # Try to find a default model
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        possible_models = [
+            os.path.join(script_dir, 'models', 'fairmot_dla34.pth'),
+            os.path.join(script_dir, 'models', 'model_best.pth'),
+            os.path.join(script_dir, 'exp', 'model_best.pth')
+        ]
+        
+        for model_path in possible_models:
+            if os.path.exists(model_path):
+                args.load_model = model_path
+                print(f"Using default pretrained model: {model_path}")
+                break
+        
+        if not args.load_model:
+            print("No pretrained model specified. Training from scratch.")
+    
+    return args
+
+
 def parse_demo_args():
     """Main function to parse demo arguments"""
     parser = create_demo_parser()
@@ -295,6 +415,14 @@ def parse_track_args():
     parser = create_track_parser()
     args = parser.parse_args()
     args = process_track_args(args)
+    return args
+
+
+def parse_train_args():
+    """Main function to parse training arguments"""
+    parser = create_train_parser()
+    args = parser.parse_args()
+    args = process_train_args(args)
     return args
 
 
